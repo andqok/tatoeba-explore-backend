@@ -1,6 +1,7 @@
-## To import database
+## Importing Tatoeba database
 
 Download sentences and links: https://tatoeba.org/eng/downloads
+
 Unpack.
 
 `sudo -i -u postgres`
