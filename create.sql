@@ -1,4 +1,15 @@
-create table sentences ( sentence_id serial primary key, sentence_number integer, sentence_text text, lang varchar(3) );
+create table sentences (
+  sentence_id serial primary key,
+  sentence_number integer,
+  sentence_text text,
+  lang varchar(3)
+);
+
+create table links (
+  link_id serial primary key,
+  link_1 integer,
+  link_2 integer
+);
 
 INSERT INTO sentences (lang, sentence_number, sentence_text)
     SELECT 'cmn', '1', '我們試試看'
