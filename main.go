@@ -81,5 +81,5 @@ func importLinks() {
 }
 
 func main() {
-	// runServer()
+	runServer()
 }
