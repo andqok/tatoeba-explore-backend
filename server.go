@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -12,7 +13,19 @@ import (
 )
 
 const connStr = "user=postgres password=ajoutee dbname=tatoeba_explore sslmode=disable"
-const delim = "?!»«():.;-,*—"
+const delim = "?!»«()/:.;-,*—"
+
+func removePunctuation(s string) string {
+	return strings.Map(
+		func(r rune) rune {
+			if strings.Contains(delim, string(r)) {
+				return -1
+			}
+			return r
+		},
+		s,
+	)
+}
 
 // Sentence my-f-ckomment
 type Sentence struct {
@@ -22,6 +35,12 @@ type Sentence struct {
 	Lang   string `json:"lang"`
 }
 
+type WordFreq struct {
+	Word      string `json:"word"`
+	Frequency int    `json:"frequency"`
+}
+
+/* Get specific sentence by its number */
 func getSentence(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
@@ -51,7 +70,7 @@ func getSentence(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSplittedWords() {
-	currLang := "ukr"
+	currLang := "eng"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -84,25 +103,51 @@ func getSplittedWords() {
 				panic(err)
 			}
 		}
-		// fmt.Println(strings.Fields(snt.Text)[0])
 	}
 }
 
-func removePunctuation(s string) string {
-	return strings.Map(
-		func(r rune) rune {
-			if strings.Contains(delim, string(r)) {
-				return -1
-			}
-			return r
-		},
-		s,
-	)
+func getTopWords(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	limit := params["limit"]
+	lang := params["lang"]
+	queryStr := `SELECT word, COUNT(*) AS frequency
+		FROM words
+		WHERE lang = $1
+		GROUP BY word
+		ORDER BY COUNT(*) DESC
+		LIMIT $2;`
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
+	}
+	rows, err1 := db.Query(queryStr, lang, limit)
+	if err1 != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	resp := []WordFreq{}
+	for rows.Next() {
+		wordFreq := WordFreq{}
+		err2 := rows.Scan(
+			&wordFreq.Word,
+			&wordFreq.Frequency,
+		)
+		if err2 != nil {
+			fmt.Println("Error happened")
+			return
+		}
+		resp = append(resp, wordFreq)
+	}
+	fmt.Println(rows)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
 func runServer() {
-	getSplittedWords()
-	// router := mux.NewRouter()
-	// router.HandleFunc("/sentence/{sentence_number}", getSentence).Methods("GET")
-	// log.Fatal(http.ListenAndServe(":3001", router))
+	router := mux.NewRouter()
+	router.HandleFunc("/sentence/{sentence_number}", getSentence).Methods("GET")
+	router.HandleFunc("/word/top/{limit}/{lang}", getTopWords).Methods("GET")
+	// router.HandleFunc("/search/{lang}/{query}")
+	log.Fatal(http.ListenAndServe(":3001", router))
 }

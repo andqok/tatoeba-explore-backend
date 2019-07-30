@@ -30,5 +30,7 @@ CREATE TABLE words (
 
 SELECT word, COUNT(*) AS frequency
 FROM words
+WHERE lang = 'eng'
 GROUP BY word
-ORDER BY COUNT(*) DESC;
+ORDER BY COUNT(*) DESC
+LIMIT 5;
