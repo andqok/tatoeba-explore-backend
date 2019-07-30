@@ -35,6 +35,7 @@ type Sentence struct {
 	Lang   string `json:"lang"`
 }
 
+// WordFreq a word frequency object
 type WordFreq struct {
 	Word      string `json:"word"`
 	Frequency int    `json:"frequency"`
@@ -144,10 +145,44 @@ func getTopWords(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func searchText(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	text := params["text"]
+	lang := params["lang"]
+	queryStr := `select * from sentences where sentence_text ilike '%` + text + `%' and lang = $1;`
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
+	}
+	rows, err1 := db.Query(queryStr, lang)
+	if err1 != nil {
+		fmt.Println(err1)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	fmt.Println(rows)
+	sentences := []Sentence{}
+	for rows.Next() {
+		snt := Sentence{}
+		err2 := rows.Scan(
+			&snt.ID,
+			&snt.Number,
+			&snt.Text,
+			&snt.Lang)
+		if err2 != nil {
+			fmt.Println("Error happened")
+			return
+		}
+		sentences = append(sentences, snt)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sentences)
+}
+
 func runServer() {
 	router := mux.NewRouter()
 	router.HandleFunc("/sentence/{sentence_number}", getSentence).Methods("GET")
 	router.HandleFunc("/word/top/{limit}/{lang}", getTopWords).Methods("GET")
-	// router.HandleFunc("/search/{lang}/{query}")
+	router.HandleFunc("/search/{lang}/{text}", searchText).Methods("GET")
 	log.Fatal(http.ListenAndServe(":3001", router))
 }
