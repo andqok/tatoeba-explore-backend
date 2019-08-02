@@ -34,3 +34,6 @@ WHERE lang = 'eng'
 GROUP BY word
 ORDER BY COUNT(*) DESC
 LIMIT 5;
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX sentences_search_idx ON sentences USING gin (sentence_text gin_trgm_ops);

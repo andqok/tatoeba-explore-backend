@@ -13,7 +13,7 @@ import (
 )
 
 const connStr = "user=postgres password=ajoutee dbname=tatoeba_explore sslmode=disable"
-const delim = "?!»«()/:.;-,*—"
+const delim = "?!»«()/:.;,*—"
 
 func removePunctuation(s string) string {
 	return strings.Map(
@@ -70,8 +70,7 @@ func getSentence(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(snt)
 }
 
-func getSplittedWords() {
-	currLang := "eng"
+func getSplittedWords(currLang string) {
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -149,7 +148,7 @@ func searchText(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	text := params["text"]
 	lang := params["lang"]
-	queryStr := `select * from sentences where sentence_text ilike '%` + text + `%' and lang = $1;`
+	queryStr := `select * from sentences where sentence_text ilike '%` + text + `%' and lang = $1 limit 50;`
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
@@ -176,6 +175,7 @@ func searchText(w http.ResponseWriter, r *http.Request) {
 		sentences = append(sentences, snt)
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(sentences)
 }
 

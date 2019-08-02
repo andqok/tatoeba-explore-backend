@@ -18,5 +18,7 @@ Fix issues with double quotes, which causes wrong parsing (without explicit erro
 
 `sed "s/\"/\"\"\"\"/g" sentences.csv > sentences-repaired.csv`
 
+Remove problematic lines: 7457556 7460541 7663935
+
 `\copy sentences(sentence_number, lang, sentence_text) from 'sentences-repaired.csv' delimiter E'\t' csv`
 
